@@ -48,6 +48,7 @@ local function GetSetCommand(pn, itemMode)
 					local hScores = hsList:GetHighScores();
 					if #hScores >= 1 then
 						topscore = hScores[1];
+						local topgrade = hScores[1]:GetGrade();
 						local misses = topscore:GetTapNoteScore("TapNoteScore_Miss")+topscore:GetTapNoteScore("TapNoteScore_CheckpointMiss")
 										+topscore:GetTapNoteScore("TapNoteScore_HitMine")+topscore:GetHoldNoteScore("HoldNoteScore_LetGo")
 						local boos = topscore:GetTapNoteScore("TapNoteScore_W5")
@@ -55,7 +56,7 @@ local function GetSetCommand(pn, itemMode)
 						local greats = topscore:GetTapNoteScore("TapNoteScore_W3")
 						local perfects = topscore:GetTapNoteScore("TapNoteScore_W2")
 						local marvelous = topscore:GetTapNoteScore("TapNoteScore_W1")
-						if topscore:GetScore() > 0 then
+						if topscore:GetScore() > 0 and topgrade~="Grade_Failed" then
 							if (misses+boos) == 0 then
 								if (goods+greats+perfects) == 0 then
 									self:setstate(0)

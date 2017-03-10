@@ -302,12 +302,16 @@ for idx, diff in pairs(difficultiesToDraw) do
 					end;
 					assert(topscore)
 					if topscore ~= 0 then
-						if AnyPlayerThisDiff(diff) then
-							self:visible(true)
-							self:targetnumber(topscore)
-						elseif song:HasStepsTypeAndDifficulty(GAMESTATE:GetCurrentStyle():GetStepsType(), diff) then
-							self:visible(true)
-							self:targetnumber(topscore)
+						local topgrade = scores[1]:GetGrade();
+						assert(topgrade);
+						if song:HasStepsTypeAndDifficulty(GAMESTATE:GetCurrentStyle():GetStepsType(), diff) then
+							if topgrade ~= "Grade_Failed" then
+								self:visible(true)
+								self:targetnumber(topscore)
+							else
+								self:visible(false)
+								self:targetnumber(0)
+							end;
 						else
 							self:visible(false)
 							self:targetnumber(0)
@@ -320,6 +324,7 @@ for idx, diff in pairs(difficultiesToDraw) do
 				end
 			end;
 		};
+		--Grade
 		Def.Quad{
 			InitCommand=function(self) SetXFromPlayerNumberScore(self:visible(false), pn) self:visible(false):addx(pn=='PlayerNumber_P2' and -72 or 72):zoom(0.3) end,
 			SNDLUpdateMessageCommand=function(self, params)
@@ -349,6 +354,8 @@ for idx, diff in pairs(difficultiesToDraw) do
 							if scores[1]:GetScore()==1000000 and topgrade=="Grade_Tier07" then
 								self:Load(THEME:GetPathG("myMusicWheel/myMusicWheel","Tier01"));
 								self:visible(true)
+							elseif topgrade=="Grade_Tier07" or topgrade=="Grade_Failed" then
+								self:visible(false)
 							else
 								self:Load(THEME:GetPathG("myMusicWheel/myMusicWheel",ToEnumShortString(topgrade)));
 								self:visible(true)
