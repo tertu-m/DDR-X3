@@ -279,14 +279,15 @@ do
     local max_diff = rev_diff.Difficulty_Challenge
     local min_diff = rev_diff.Difficulty_Beginner
     --DeepCopy is so that these are all independent
-    local cur_grade_table = DeepCopy(grade_table.Difficulty_Edit)
+    local cur_grade_table = grade_table.Difficulty_Edit
     for idx=max_diff, min_diff, -1 do
         --inherit changes from the "parent"
         cur_grade_table = DeepCopy(cur_grade_table)
         local source_table = grade_table[Difficulty[idx]]
         if source_table then
            for k, v in pairs(source_table) do cur_grade_table[k] = v end
-        end 
+        end
+        grade_table[Difficulty[idx]] = cur_grade_table
     end
 end
 
