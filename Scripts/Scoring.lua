@@ -250,6 +250,58 @@ function SN2Scoring.MakeCourseScoringFunctions(trailObject,pn)
     return package
 end
 
+SN2Grading = {}
+--Edit is technically the "highest difficulty"
+local grade_table = {
+    Difficulty_Edit = {
+        Grade_Tier01 = 1000000, --AAA+
+        Grade_Tier02 = 990000, --AAA
+        Grade_Tier03 = 950000, --AA
+        Grade_Tier04 = 900000, --A
+        Grade_Tier05 = 800000, --B
+        Grade_Tier06 = 700000, --C
+        Grade_Tier07 = 0, --D
+    },
+    Difficulty_Medium = {
+        Grade_Tier04 = 850000,
+        Grade_Tier05 = 750000,
+        Grade_Tier06 = 600000
+    },
+    Difficulty_Easy = {
+        Grade_Tier04 = 800000,
+        Grade_Tier05 = 700000,
+        Grade_Tier06 = 500000
+    }
+}
+--i'm too lazy to fill this out in full, so this does it for me
+do
+    local rev_diff = Enum.Reverse(Difficulty)
+    local max_diff = rev_diff.Difficulty_Challenge
+    local min_diff = rev_diff.Difficulty_Beginner
+    --DeepCopy is so that these are all independent
+    local cur_grade_table = DeepCopy(grade_table.Difficulty_Edit)
+    for idx=max_diff, min_diff, -1 do
+        --inherit changes from the "parent"
+        cur_grade_table = DeepCopy(cur_grade_table)
+        local source_table = grade_table[Difficulty[idx]]
+        if source_table then
+           for k, v in pairs(source_table) do cur_grade_table[k] = v end
+        end 
+    end
+end
+
+function SN2Grading.ScoreToGrade(score, difficulty)
+    local tiers = grade_table[difficulty]
+    local output = nil
+    local best = 0
+    for grade, min_score in pairs(tiers) do
+        if score >= min_score and min_score >= best then
+            output = grade
+        end
+    end
+    return output
+end
+
 -- (c) 2015-2017 John Walstrom, "Inorizushi"
 -- All rights reserved.
 -- 
