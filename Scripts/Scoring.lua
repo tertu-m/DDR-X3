@@ -123,7 +123,7 @@ function SN2Scoring.ComputeNormalScoreFromData(data, max, scoringRuleSet)
         totalDeductions = totalDeductions + (scoreCount * (deductions[tns] or 0))
     end
     for hns, multiplier in pairs(hnsMultipliers) do
-        scoreCount = pss:GetHoldNoteScores(hns)
+        scoreCount = data[hns]
         maxFraction = maxFraction + (scoreCount * multiplier)
     end
     return ((maxFraction/objectCount) * maxScore) - totalDeductions    
