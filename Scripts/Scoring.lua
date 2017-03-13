@@ -57,6 +57,22 @@ local maxQuasiMultipliers =
     TapNoteScore_Miss = 1
 }
 
+--Given a thing which has functions hnsFuncName and tnsFuncName that take one
+--argument and return the number of TNSes or HNSes there are in that thing,
+--pack that information into something useful.
+local function GetScoreDataFromThing(thing, tnsFuncName, hnsFuncName)
+    local output = {}
+    --how class function lookup works internally in Lua
+    local hnsFunc = thing[hnsFuncName]
+    local tnsFunc = thing[tnsFuncName]
+    for tns, _ in pairs(maxQuasiMultipliers) do
+        output[tns] = tnsFunc(thing, tns)
+    end
+    for _, hns in pairs({HoldNoteScore_Held, HoldNoteScore_LetGo})
+        output[hns] = hnsFunc(thing, hns)
+    end
+end
+
 function SN2Scoring.PrepareScoringInfo(starterRules)
     if GAMESTATE then
         local stageSeed = GAMESTATE:GetStageSeed()
@@ -80,39 +96,61 @@ function SN2Scoring.PrepareScoringInfo(starterRules)
     end
 end
 
+--data format for this function:
+--a table with a count of total holds, rolls, and taps called "Total"
+--all earned TapNoteScores in the class W1-W5 and Miss under their native names
+--all earned HoldNoteScores
+function SN2Scoring.ComputeNormalScoreFromData(data, max, scoringRuleSet)
+    scoringRuleSet = scoringRuleSet or normalScoringRules.normal
+    local objectCount = data.Total
+    local maxScore = 1000000
+    local maxFraction = 0
+    local totalDeductions = 0
+    local tnsMultipliers, hnsMultipliers, deductions
+    if max then
+        tnsMultipliers = maxQuasiMultipliers
+        hnsMultipliers = {HoldNoteScore_Held = 1, HoldNoteScore_LetGo = 1}
+        deductions = {}
+    else
+        tnsMultipliers = scoringRuleSet.multipliers
+        hnsMultipliers = {HoldNoteScore_Held = 1}
+        deductions = scoringRuleSet.deductions
+    end
+    local scoreCount
+    for tns, multiplier in pairs(tnsMultipliers) do
+        scoreCount = data[tns]
+        maxFraction = maxFraction + (scoreCount * multiplier)
+        totalDeductions = totalDeductions + (scoreCount * (deductions[tns] or 0))
+    end
+    for hns, multiplier in pairs(hnsMultipliers) do
+        scoreCount = pss:GetHoldNoteScores(hns)
+        maxFraction = maxFraction + (scoreCount * multiplier)
+    end
+    return ((maxFraction/objectCount) * maxScore) - totalDeductions    
+end
+
+
+function SN2Scoring.GetSN2ScoreForHighScore(steps, highScore)
+    local scoreData = GetScoreDataFromThing(highScore, "GetTapNoteScore", 
+        "GetHoldNoteScore")
+    local radar = steps:GetRadarValues(pn)
+    scoreData.Total = radar:GetValue('RadarCategory_TapsAndHolds')+
+        radar:GetValue('RadarCategory_Holds')+radar:GetValue('RadarCategory_Rolls')
+    return SN2Scoring.ComputeNormalScoreFromData(scoreData)
+end
+
 --Normal scoring
 
 function SN2Scoring.MakeNormalScoringFunctions(stepsObject,pn,starterRules)
     local package = {}
     local radar = stepsObject:GetRadarValues(pn)
-    local maxScore = starterRules and 100000 or 1000000
     local objectCount = radar:GetValue('RadarCategory_TapsAndHolds')+radar:GetValue('RadarCategory_Holds')+radar:GetValue('RadarCategory_Rolls')
     local scoringRuleSet = starterRules and normalScoringRules.starter or normalScoringRules.normal
 
     local function ComputeScore(pss, max)
-        local maxFraction = 0
-        local totalDeductions = 0
-        local tnsMultipliers, hnsMultipliers, deductions
-        if max then
-            tnsMultipliers = maxQuasiMultipliers
-            hnsMultipliers = {HoldNoteScore_Held = 1, HoldNoteScore_LetGo = 1}
-            deductions = {}
-        else
-            tnsMultipliers = scoringRuleSet.multipliers
-            hnsMultipliers = {HoldNoteScore_Held = 1}
-            deductions = scoringRuleSet.deductions
-        end
-        local scoreCount
-        for tns, multiplier in pairs(tnsMultipliers) do
-            scoreCount = pss:GetTapNoteScores(tns)
-            maxFraction = maxFraction + (scoreCount * multiplier)
-            totalDeductions = totalDeductions + (scoreCount * (deductions[tns] or 0))
-        end
-        for hns, multiplier in pairs(hnsMultipliers) do
-            scoreCount = pss:GetHoldNoteScores(hns)
-            maxFraction = maxFraction + (scoreCount * multiplier)
-        end
-        return ((maxFraction/objectCount) * maxScore) - totalDeductions
+        local computeData = GetScoreDataFromThing(pss, "GetTapNoteScores", "GetHoldNoteScores")
+        computeData.Total = objectCount
+        return SN2Scoring.ComputeNormalScoreFromData(computeData, max, scoringRuleSet)
     end
 
     package.AddTapScore = function() end
@@ -302,6 +340,13 @@ function SN2Grading.ScoreToGrade(score, difficulty)
     end
     return output
 end
+
+--returns score too because what the hell
+function SN2Grading.GetSN2GradeFromHighScore(steps, highScore)
+    local score = SN2Scoring.GetSN2ScoreForHighScore(steps, highScore)
+    return SN2Grading.ScoreToGrade(score, steps:GetDifficulty()), score
+end
+
 
 -- (c) 2015-2017 John Walstrom, "Inorizushi"
 -- All rights reserved.
