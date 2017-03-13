@@ -130,7 +130,7 @@ function SN2Scoring.ComputeNormalScoreFromData(data, max, scoringRuleSet)
 end
 
 
-function SN2Scoring.GetSN2ScoreForHighScore(steps, highScore)
+function SN2Scoring.GetSN2ScoreFromHighScore(steps, highScore)
     local scoreData = GetScoreDataFromThing(highScore, "GetTapNoteScore", 
         "GetHoldNoteScore")
     local radar = steps:GetRadarValues(pn)
@@ -343,7 +343,7 @@ end
 
 --returns score too because what the hell
 function SN2Grading.GetSN2GradeFromHighScore(steps, highScore)
-    local score = SN2Scoring.GetSN2ScoreForHighScore(steps, highScore)
+    local score = SN2Scoring.GetSN2ScoreFromHighScore(steps, highScore)
     return SN2Grading.ScoreToGrade(score, steps:GetDifficulty()), score
 end
 
